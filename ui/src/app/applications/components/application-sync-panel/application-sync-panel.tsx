@@ -97,7 +97,7 @@ export const ApplicationSyncPanel = ({application, selectedResource, hide}: {app
                                     }
                                 }
 
-                                const force = syncFlags.Force || false;
+                                const force = false;
 
                                 if (syncFlags.ApplyOnly) {
                                     syncStrategy.apply = {force};

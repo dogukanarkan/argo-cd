@@ -76,15 +76,13 @@ function booleanOption(name: string, label: string, defaultVal: boolean, props: 
 enum ManualSyncFlags {
     Prune = 'Prune',
     DryRun = 'Dry Run',
-    ApplyOnly = 'Apply Only',
-    Force = 'Force'
+    ApplyOnly = 'Apply Only'
 }
 
 export interface SyncFlags {
     Prune: boolean;
     DryRun: boolean;
     ApplyOnly: boolean;
-    Force: boolean;
 }
 
 const syncOptions: Array<(props: ApplicationSyncOptionProps) => React.ReactNode> = [

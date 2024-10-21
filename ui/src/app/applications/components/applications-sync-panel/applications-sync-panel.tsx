@@ -72,7 +72,7 @@ export const ApplicationsSyncPanel = ({show, apps, hide}: {show: boolean; apps: 
                             setPending(true);
                             const selectedApps = getSelectedApps(params);
                             const syncFlags = {...params.syncFlags} as SyncFlags;
-                            const force = syncFlags.Force || false;
+                            const force = false;
                             if (force) {
                                 const confirmed = await ctx.popup.confirm('Synchronize with force?', () => (
                                     <div>
