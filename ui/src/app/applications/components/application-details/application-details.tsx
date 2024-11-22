@@ -474,6 +474,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{app
                             };
                             const clearFilter = () => setFilter([]);
                             const refreshing = application.metadata.annotations && application.metadata.annotations[appModels.AnnotationRefreshKey];
+                            const hardRefreshing = application.metadata.annotations && application.metadata.annotations[appModels.AnnotationRefreshKey] === 'hard';
                             const appNodesByName = this.groupAppNodesByKey(application, tree);
                             const selectedItem = (this.selectedNodeKey && appNodesByName.get(this.selectedNodeKey)) || null;
                             const isAppSelected = selectedItem === application;
@@ -679,7 +680,8 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{app
                                                 />
                                             </div>
                                             <div className='application-details__tree'>
-                                                {refreshing && <p className='application-details__refreshing-label'>Refreshing</p>}
+                                                {refreshing && !hardRefreshing && <p className='application-details__refreshing-label'>Refreshing</p>}
+                                                {hardRefreshing && <p className='application-details__refreshing-label'>Hard Refreshing</p>}
                                                 {((pref.view === 'tree' || pref.view === 'network') && (
                                                     <>
                                                         <DataLoader load={() => services.viewPreferences.getPreferences()}>
@@ -991,24 +993,23 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{app
                   },
             {
                 iconClassName: classNames('fa fa-redo', {'status-icon--spin': !!refreshing}),
-                title: (
-                    <React.Fragment>
-                        <ActionMenuItem actionLabel='Refresh' />{' '}
-                        <DropDownMenu
-                            items={[
-                                {
-                                    title: 'Hard Refresh',
-                                    action: () => !refreshing && services.applications.get(app.metadata.name, app.metadata.namespace, 'hard')
-                                }
-                            ]}
-                            anchor={() => <i className='fa fa-caret-down' />}
-                        />
-                    </React.Fragment>
-                ),
+                title: <ActionMenuItem actionLabel='Refresh' />,
                 disabled: !!refreshing,
                 action: () => {
                     if (!refreshing) {
                         services.applications.get(app.metadata.name, app.metadata.namespace, 'normal');
+                        AppUtils.setAppRefreshing(app);
+                        this.appChanged.next(app);
+                    }
+                }
+            },
+            {
+                iconClassName: classNames('fa fa-redo', {'status-icon--spin': !!refreshing}),
+                title: <ActionMenuItem actionLabel='Hard Refresh' />,
+                disabled: !!refreshing,
+                action: () => {
+                    if (!refreshing) {
+                        services.applications.get(app.metadata.name, app.metadata.namespace, 'hard');
                         AppUtils.setAppRefreshing(app);
                         this.appChanged.next(app);
                     }
