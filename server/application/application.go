@@ -14,7 +14,8 @@ import (
 
 	kubecache "github.com/argoproj/gitops-engine/pkg/cache"
 	"github.com/argoproj/gitops-engine/pkg/diff"
-	"github.com/argoproj/gitops-engine/pkg/sync/common"
+	synccommon "github.com/argoproj/gitops-engine/pkg/sync/common"
+	resourceutil "github.com/argoproj/gitops-engine/pkg/sync/resource"
 	"github.com/argoproj/gitops-engine/pkg/utils/kube"
 	"github.com/argoproj/gitops-engine/pkg/utils/text"
 	"github.com/argoproj/pkg/sync"
@@ -1463,7 +1464,7 @@ func (s *Server) DeleteResource(ctx context.Context, q *application.ApplicationR
 		Group:        q.Group,
 		Project:      q.Project,
 	}
-	res, config, a, err := s.getAppLiveResource(ctx, rbacpolicy.ActionDelete, resourceRequest)
+	obj, res, a, config, err := s.getUnstructuredLiveResourceOrApp(ctx, rbacpolicy.ActionDelete, resourceRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -1479,6 +1480,11 @@ func (s *Server) DeleteResource(ctx context.Context, q *application.ApplicationR
 		propagationPolicy := metav1.DeletePropagationForeground
 		deleteOption = metav1.DeleteOptions{PropagationPolicy: &propagationPolicy}
 	}
+
+	if resourceutil.HasAnnotationOption(obj, synccommon.AnnotationSyncOptions, synccommon.SyncOptionDisableDeletion) {
+		return nil, fmt.Errorf("resource %s/%s '%s' is disabled for deletion", q.GetGroup(), q.GetKind(), q.GetResourceName())
+	}
+
 	err = s.kubectl.DeleteResource(ctx, config, res.GroupKindVersion(), res.Name, res.Namespace, deleteOption)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting resource: %w", err)
@@ -2301,7 +2307,7 @@ func (s *Server) TerminateOperation(ctx context.Context, termOpReq *application.
 		if a.Operation == nil || a.Status.OperationState == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Unable to terminate operation. No operation is in progress")
 		}
-		a.Status.OperationState.Phase = common.OperationTerminating
+		a.Status.OperationState.Phase = synccommon.OperationTerminating
 		updated, err := s.appclientset.ArgoprojV1alpha1().Applications(appNs).Update(ctx, a, metav1.UpdateOptions{})
 		if err == nil {
 			s.waitSync(updated)
